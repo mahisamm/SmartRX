@@ -5,12 +5,16 @@
 Phone number is the patient identity (per design doc). Doctors are also users,
 distinguished by `role`.
 """
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 
 from sqlalchemy import String, Integer, Float, Date, DateTime, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class User(Base):
@@ -20,10 +24,12 @@ class User(Base):
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     role: Mapped[str] = mapped_column(String(10), nullable=False)  # "patient" | "doctor"
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
     prescriptions: Mapped[list["Prescription"]] = relationship(
-        back_populates="patient", cascade="all, delete-orphan"
+        back_populates="patient",
+        cascade="all, delete-orphan",
+        order_by="Prescription.created_at.desc()",
     )
 
 
@@ -40,7 +46,7 @@ class Prescription(Base):
     image_path: Mapped[str | None] = mapped_column(String(255))
     engine: Mapped[str | None] = mapped_column(String(40))   # extraction engine used
     confidence: Mapped[float | None] = mapped_column(Float)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
 
     patient: Mapped["User"] = relationship(back_populates="prescriptions")
     medicines: Mapped[list["Medicine"]] = relationship(

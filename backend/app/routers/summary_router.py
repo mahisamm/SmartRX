@@ -1,5 +1,5 @@
 """Doctor endpoint: AI-generated patient summary."""
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -26,6 +26,7 @@ def patient_summary(
     prescriptions = [
         {
             "doctor_name": rx.doctor_name,
+            "hospital": rx.hospital,
             "date": str(rx.date) if rx.date else None,
             "medicines": [
                 {"name": m.name, "dose": m.dose, "frequency": m.frequency,
@@ -48,5 +49,5 @@ def patient_summary(
         name=patient.name,
         summary=summary,
         medicine_count=med_count,
-        generated_at=datetime.utcnow(),
+        generated_at=datetime.now(timezone.utc),
     )

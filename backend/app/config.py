@@ -1,6 +1,9 @@
 """App configuration. Reads from environment / .env."""
 import os
 from functools import lru_cache
+from dotenv import load_dotenv
+
+load_dotenv()  # loads .env from CWD (backend/) at import time
 
 
 class Settings:
@@ -15,7 +18,7 @@ class Settings:
 
     # Gemini
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
-    gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+    gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
     # Uploads
     upload_dir: str = os.getenv("UPLOAD_DIR", "./uploads")
@@ -24,6 +27,16 @@ class Settings:
 
     # OCR fallback: trust Gemini vision when Tesseract mean word-confidence is below this.
     tesseract_confidence_floor: float = float(os.getenv("TESSERACT_CONF_FLOOR", "60"))
+
+    # CORS: comma-separated list of allowed origins.
+    # Default allows local Vite dev server.
+    allowed_origins: list = [
+        o.strip()
+        for o in os.getenv(
+            "ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173"
+        ).split(",")
+        if o.strip()
+    ]
 
 
 @lru_cache

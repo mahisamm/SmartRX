@@ -4,7 +4,7 @@ We call the `bcrypt` library directly rather than through passlib: passlib 1.7.x
 unmaintained and breaks against bcrypt >= 4.1 (it reads the removed `__about__`
 attribute). Direct use is a few lines and avoids that fragility.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import bcrypt
 from fastapi import Depends, HTTPException, status
@@ -37,7 +37,7 @@ def make_token(phone: str, role: str) -> str:
     payload = {
         "sub": phone,
         "role": role,
-        "exp": datetime.utcnow() + timedelta(minutes=settings.jwt_expire_minutes),
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_expire_minutes),
     }
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 

@@ -70,9 +70,13 @@ async def upload_prescription(
 @router.get("/patient/{phone}", response_model=PatientLogOut)
 def patient_log(
     phone: str,
-    _user: User = Depends(current_user),
+    user: User = Depends(current_user),
     db: Session = Depends(get_db),
 ):
+    # Patients may only view their own log; doctors may view any patient.
+    if user.role == "patient" and user.phone != phone:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "access denied")
+
     patient = db.get(User, phone)
     if not patient or patient.role != "patient":
         raise HTTPException(status.HTTP_404_NOT_FOUND, "no records found")
@@ -86,6 +90,7 @@ def patient_log(
                 doctor_name=rx.doctor_name,
                 hospital=rx.hospital,
                 date=rx.date,
+                image_path=rx.image_path,
                 medicines=[MedicineOut.model_validate(m, from_attributes=True) for m in rx.medicines],
             )
             for rx in patient.prescriptions

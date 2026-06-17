@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, setSession, getUser } from "../api.js";
 
@@ -12,11 +12,12 @@ export default function LoginPage() {
   const [error, setError] = useState("");
 
   // Already signed in? Skip the form.
-  const existing = getUser();
-  if (existing) {
-    navigate(existing.role === "doctor" ? "/doctor" : "/patient", { replace: true });
-    return null;
-  }
+  useEffect(() => {
+    const existing = getUser();
+    if (existing) {
+      navigate(existing.role === "doctor" ? "/doctor" : "/patient", { replace: true });
+    }
+  }, [navigate]);
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }));

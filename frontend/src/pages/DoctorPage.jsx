@@ -47,7 +47,7 @@ export default function DoctorPage() {
             disabled={busy}
           />
           <button type="submit" className="primary" disabled={busy || !phone.trim()}>
-            {busy ? "Looking up…" : "Look up"}
+            {busy ? <><span className="spinner" />Looking up…</> : "Look up"}
           </button>
         </form>
         {error && <p className="error">{error}</p>}

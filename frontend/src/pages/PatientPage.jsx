@@ -10,6 +10,7 @@ export default function PatientPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadErr, setUploadErr] = useState("");
   const [lastResult, setLastResult] = useState(null);
+  const [dragging, setDragging] = useState(false);
 
   async function loadLog() {
     setLoadErr("");
@@ -59,12 +60,24 @@ export default function PatientPage() {
           5–15 seconds.
         </p>
         <form onSubmit={upload} className="form">
-          <label className="dropzone">
+          <label
+            className={`dropzone${dragging ? " dragging" : ""}`}
+            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragging(false);
+              const dropped = e.dataTransfer.files[0];
+              if (dropped && (dropped.type === "image/jpeg" || dropped.type === "image/png")) {
+                setFile(dropped);
+              }
+            }}
+          >
             <span className="dropzone-icon" aria-hidden="true">📷</span>
             <span className="dropzone-title">
-              {file ? file.name : "Snap or choose a photo"}
+              {file ? file.name : "Drag & drop or choose a photo"}
             </span>
-            <span className="dropzone-sub">JPG or PNG</span>
+            <span className="dropzone-sub">JPG or PNG · max 10 MB</span>
             <input
               type="file"
               accept="image/jpeg,image/png"
@@ -75,7 +88,7 @@ export default function PatientPage() {
           </label>
           {uploadErr && <p className="error">{uploadErr}</p>}
           <button type="submit" className="primary" disabled={!file || uploading}>
-            {uploading ? "Reading prescription…" : "Upload"}
+            {uploading ? <><span className="spinner" />Reading prescription…</> : "Upload"}
           </button>
         </form>
 

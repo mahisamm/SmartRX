@@ -68,6 +68,7 @@ class PrescriptionLite(BaseModel):
     doctor_name: Optional[str] = None
     hospital: Optional[str] = None
     date: Optional[dt.date] = None
+    image_path: Optional[str] = None
     medicines: list[MedicineOut] = []
 
 
