@@ -59,12 +59,20 @@ export default function PatientPage() {
           5–15 seconds.
         </p>
         <form onSubmit={upload} className="form">
-          <input
-            type="file"
-            accept="image/jpeg,image/png"
-            onChange={(e) => setFile(e.target.files[0] || null)}
-            disabled={uploading}
-          />
+          <label className="dropzone">
+            <span className="dropzone-icon" aria-hidden="true">📷</span>
+            <span className="dropzone-title">
+              {file ? file.name : "Snap or choose a photo"}
+            </span>
+            <span className="dropzone-sub">JPG or PNG</span>
+            <input
+              type="file"
+              accept="image/jpeg,image/png"
+              onChange={(e) => setFile(e.target.files[0] || null)}
+              disabled={uploading}
+              hidden
+            />
+          </label>
           {uploadErr && <p className="error">{uploadErr}</p>}
           <button type="submit" className="primary" disabled={!file || uploading}>
             {uploading ? "Reading prescription…" : "Upload"}

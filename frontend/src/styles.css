@@ -1,15 +1,24 @@
+/* smartRX — "Warm Care" theme
+   Warm coral + amber on cream, friendly Poppins type, big rounded shapes,
+   oversized touch targets. Tuned for nervous / elderly patients. */
 :root {
-  --bg: #f4f6fb;
+  --bg: #fdf3e3;
   --card: #ffffff;
-  --ink: #1c2433;
-  --muted: #6b7686;
-  --accent: #2563eb;
+  --ink: #3f3a33;
+  --muted: #9a8f7d;
+  --accent: #fb7185;        /* coral */
+  --accent-dark: #f43f5e;
   --accent-ink: #ffffff;
-  --border: #e2e6ee;
+  --amber: #f59e0b;
+  --amber-ink: #b45309;
+  --border: #f3e8d4;
   --ok-bg: #e7f6ec;
   --ok-ink: #1d7a3d;
   --err: #c0392b;
-  --radius: 12px;
+  --radius: 22px;
+  --radius-sm: 16px;
+  --shadow: 0 6px 20px rgba(180, 120, 60, 0.10);
+  --shadow-accent: 0 6px 16px rgba(251, 113, 133, 0.35);
 }
 
 * {
@@ -18,9 +27,10 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   background: var(--bg);
   color: var(--ink);
+  -webkit-font-smoothing: antialiased;
 }
 
 .app {
@@ -32,15 +42,17 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 24px;
-  background: var(--card);
-  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  background: var(--bg);
 }
 .brand {
   font-weight: 700;
-  font-size: 1.25rem;
-  color: var(--accent);
+  font-size: 1.3rem;
+  color: var(--ink);
   text-decoration: none;
+}
+.brand::after {
+  content: "";
 }
 .topbar-right {
   display: flex;
@@ -49,14 +61,16 @@ body {
 }
 .who {
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.92rem;
 }
 .link-btn {
   background: none;
   border: none;
-  color: var(--accent);
+  color: var(--accent-dark);
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  font-family: inherit;
 }
 
 /* layout */
@@ -74,15 +88,17 @@ body {
 /* cards */
 .card {
   background: var(--card);
-  border: 1px solid var(--border);
+  border: none;
   border-radius: var(--radius);
-  padding: 24px;
+  padding: 26px;
+  box-shadow: var(--shadow);
 }
 .card h2 {
   margin: 0 0 4px;
+  font-weight: 700;
 }
 .auth-card {
-  max-width: 420px;
+  max-width: 440px;
   margin: 48px auto;
 }
 
@@ -90,12 +106,13 @@ body {
 .form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-top: 16px;
+  gap: 16px;
+  margin-top: 18px;
 }
 .form.row {
   flex-direction: row;
-  align-items: center;
+  align-items: flex-end;
+  gap: 10px;
 }
 .form.row input {
   flex: 1;
@@ -103,102 +120,170 @@ body {
 label {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  font-size: 0.9rem;
-  color: var(--muted);
+  gap: 7px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--ink);
 }
 input,
 select {
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  padding: 14px 15px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
   font-size: 1rem;
-  background: #fff;
+  font-family: inherit;
+  background: var(--card);
   color: var(--ink);
 }
 input:focus,
 select:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: -1px;
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(251, 113, 133, 0.15);
 }
 
 button.primary {
   background: var(--accent);
   color: var(--accent-ink);
   border: none;
-  padding: 11px 18px;
-  border-radius: 8px;
-  font-size: 1rem;
+  padding: 15px 22px;
+  border-radius: var(--radius-sm);
+  font-size: 1.05rem;
+  font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
+  box-shadow: var(--shadow-accent);
+  transition: background 0.15s ease;
+}
+button.primary:hover:not(:disabled) {
+  background: var(--accent-dark);
 }
 button.primary:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 /* tabs */
 .tabs {
   display: flex;
-  gap: 8px;
-  margin-top: 16px;
+  gap: 5px;
+  margin-top: 18px;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 5px;
 }
 .tab {
   flex: 1;
-  padding: 9px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  padding: 11px;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--muted);
   cursor: pointer;
 }
 .tab.active {
   background: var(--accent);
   color: var(--accent-ink);
+  box-shadow: var(--shadow-accent);
+}
+
+/* upload dropzone (patient) */
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  border: 3px dashed #f0d9b5;
+  border-radius: var(--radius);
+  background: var(--card);
+  padding: 34px 18px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.dropzone:hover {
   border-color: var(--accent);
+  background: #fffaf5;
+}
+.dropzone-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.16);
+  color: var(--amber);
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+.dropzone-title {
+  font-weight: 600;
+  font-size: 1.05rem;
+  word-break: break-all;
+}
+.dropzone-sub {
+  color: var(--muted);
+  font-size: 0.88rem;
 }
 
 /* prescriptions */
 .rx-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 12px;
+  gap: 14px;
+  margin-top: 14px;
 }
 .rx-card {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 16px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  background: var(--card);
 }
 .rx-head {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
+  font-weight: 600;
 }
 .med-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 12px;
-  font-size: 0.92rem;
+  font-size: 0.95rem;
 }
 .med-table th,
 .med-table td {
   text-align: left;
-  padding: 7px 8px;
-  border-bottom: 1px solid var(--border);
+  padding: 9px 8px;
+  border-bottom: 2px solid var(--border);
 }
 .med-table th {
   color: var(--muted);
   font-weight: 600;
 }
+.med-table tr:last-child td {
+  border-bottom: none;
+}
 
 /* summary */
 .summary-block {
-  background: var(--bg);
-  border-radius: 10px;
-  padding: 16px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 2px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius);
+  padding: 20px;
   margin: 16px 0;
 }
 .summary-block h3 {
-  margin: 0 0 8px;
+  margin: 0 0 9px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--amber-ink);
 }
 
 /* misc */
@@ -210,18 +295,21 @@ button.primary:disabled {
 }
 .error {
   color: var(--err);
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   margin: 0;
+  font-weight: 500;
 }
 .banner {
   margin-top: 16px;
-  padding: 12px 14px;
-  border-radius: 8px;
+  padding: 13px 16px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
 }
 .banner.ok {
   background: var(--ok-bg);
   color: var(--ok-ink);
 }
 h3 {
-  margin: 18px 0 4px;
+  margin: 20px 0 4px;
+  font-weight: 700;
 }
