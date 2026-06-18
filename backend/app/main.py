@@ -6,14 +6,21 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import get_settings
 from .database import Base, engine
-from . import models  # noqa: F401  (register models on Base before create_all)
-from .routers import auth_router, prescriptions_router, summary_router
+from . import models  # noqa: F401
+from .routers import (
+    auth_router,
+    prescriptions_router,
+    summary_router,
+    notes_router,
+    settings_router,
+    audit_router,
+)
 
 settings = get_settings()
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="smartRX API", version="1.0.0")
+app = FastAPI(title="smartRX API", version="2.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -26,12 +33,14 @@ app.add_middleware(
 app.include_router(auth_router.router)
 app.include_router(prescriptions_router.router)
 app.include_router(summary_router.router)
+app.include_router(notes_router.router)
+app.include_router(settings_router.router)
+app.include_router(audit_router.router)
 
-# Serve uploaded prescription images under /uploads/<filename>.
 os.makedirs(settings.upload_dir, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads")
 
 
 @app.get("/health", tags=["meta"])
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "version": "2.0.0"}

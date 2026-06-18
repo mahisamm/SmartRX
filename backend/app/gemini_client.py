@@ -1,22 +1,19 @@
-"""Single shared Gemini client wrapper (eng review: DRY — one client for vision + summary).
+"""Single shared Gemini client wrapper.
 
-Two real calls go through here:
-  - vision_extract(): image -> structured prescription JSON (validated downstream).
-  - generate_summary(): a patient's medicine log -> a readable doctor-facing summary.
+Two real calls:
+  - vision_extract(): image -> structured prescription JSON.
+  - generate_structured_summary(): medicine log -> structured doctor-facing summary
+    with drug interaction detection.
 
-If GEMINI_API_KEY is unset the wrapper runs in **stub mode**: both functions return
-canned data so the whole app boots and round-trips without a key. Set the key in .env
-to go live.
+Stub mode: no GEMINI_API_KEY → canned data, app boots without a key.
 """
 import json
 import re
-from typing import Optional
 
 from .config import get_settings
 
 settings = get_settings()
 
-# Lazily created so the app boots without a GEMINI_API_KEY (stub mode).
 _client = None
 
 
@@ -24,9 +21,8 @@ def _get_client():
     global _client
     if _client is None:
         if not settings.gemini_api_key:
-            return None  # stub mode
-        from google import genai  # imported lazily so stub mode needs no SDK install
-
+            return None
+        from google import genai
         _client = genai.Client(api_key=settings.gemini_api_key)
     return _client
 
@@ -35,9 +31,7 @@ def _extract_json(text: str) -> dict:
     """Pull a JSON object out of a model response, tolerating ```json fences / prose."""
     if not text:
         return {}
-    # Strip ```json ... ``` fences if present.
     text = re.sub(r"```(?:json)?", "", text).replace("```", "").strip()
-    # Greedy first-brace-to-last-brace span survives nested objects/arrays.
     span = re.search(r"\{.*\}", text, re.DOTALL)
     candidate = span.group(0) if span else text
     try:
@@ -63,11 +57,7 @@ Return [] for medicines if none are legible."""
 
 
 def vision_extract(image_bytes: bytes, mime: str) -> dict:
-    """Send an image to Gemini vision, return a structured prescription dict.
-
-    The dict matches schemas.ExtractionResult fields (minus engine, which the caller
-    sets). In stub mode returns a fixed sample so the flow works without a key.
-    """
+    """Send an image to Gemini vision, return a structured prescription dict."""
     client = _get_client()
     if client is None:
         return _STUB_EXTRACTION
@@ -83,7 +73,6 @@ def vision_extract(image_bytes: bytes, mime: str) -> dict:
         config=types.GenerateContentConfig(response_mime_type="application/json"),
     )
     data = _extract_json(getattr(resp, "text", "") or "")
-    # Normalize: guarantee the keys the caller reads exist.
     return {
         "doctor_name": data.get("doctor_name"),
         "hospital": data.get("hospital"),
@@ -93,23 +82,73 @@ def vision_extract(image_bytes: bytes, mime: str) -> dict:
     }
 
 
-def generate_summary(name: str, prescriptions: list[dict]) -> str:
-    """Generate a readable medical summary from a patient's prescriptions."""
+_STRUCTURED_SUMMARY_PROMPT = """You are a clinical assistant. Analyze this patient's complete prescription history
+and return ONLY a JSON object with these exact keys (no prose, no markdown fences):
+{{
+  "clinical_notes": "2-3 sentence factual overview for a doctor reading this in under 30 seconds",
+  "current_medicines": [
+    {{ "name": "...", "dose": "...", "frequency": "...", "last_prescribed": "YYYY-MM-DD or null", "status": "ongoing|completed|unknown" }}
+  ],
+  "conditions": [
+    {{ "name": "...", "onset": "date or null", "status": "stable|improving|worsening|unknown" }}
+  ],
+  "allergies": [],
+  "last_consultation": "YYYY-MM-DD or null",
+  "trend": "stable|improving|worsening|insufficient_data"
+}}
+
+Rules:
+- Only state what is supported by the prescription data. Do not invent diagnoses.
+- current_medicines: list unique medicines. Mark ongoing if no end date visible.
+- conditions: infer only if prescriptions clearly indicate a condition.
+- allergies: only if explicitly mentioned. Default to [].
+
+Patient name: {name}
+Prescription data (JSON):
+{data}"""
+
+
+def generate_structured_summary(name: str, prescriptions: list[dict]) -> dict:
+    """Return a structured summary dict. Falls back to stub if no API key."""
     client = _get_client()
     if client is None:
         meds = [m["name"] for p in prescriptions for m in p.get("medicines", [])]
-        return f"[stub summary] {name} has {len(meds)} medicine(s) on record: " + ", ".join(meds)
+        stub = dict(_STUB_STRUCTURED)
+        stub["clinical_notes"] = (
+            f"[stub] {name} has {len(meds)} medicine(s) on record: " + ", ".join(meds[:5])
+        )
+        stub["current_medicines"] = [
+            {"name": m, "dose": None, "frequency": None, "last_prescribed": None, "status": "unknown"}
+            for m in meds[:10]
+        ]
+        return stub
 
-    prompt = (
-        "You are a clinical assistant. Write a concise, factual summary (2-4 sentences) "
-        f"for a doctor reviewing patient {name}. Base it ONLY on the prescription data "
-        "below. Mention current medications with dose/frequency, the prescribing doctor "
-        "and date where available, and flag if multiple prescriptions overlap. Do not "
-        "give new medical advice or diagnoses.\n\n"
-        f"Prescription data (JSON):\n{json.dumps(prescriptions, default=str)}"
+    prompt = _STRUCTURED_SUMMARY_PROMPT.format(
+        name=name,
+        data=json.dumps(prescriptions, default=str),
     )
-    resp = client.models.generate_content(model=settings.gemini_model, contents=prompt)
-    return (getattr(resp, "text", "") or "").strip()
+    resp = client.models.generate_content(
+        model=settings.gemini_model,
+        contents=prompt,
+        config=None,
+    )
+    raw = _extract_json(getattr(resp, "text", "") or "")
+    if not raw:
+        return {
+            "clinical_notes": (getattr(resp, "text", "") or "").strip(),
+            "current_medicines": [],
+            "conditions": [],
+            "allergies": [],
+            "last_consultation": None,
+            "trend": "insufficient_data",
+        }
+    return raw
+
+
+def generate_summary(name: str, prescriptions: list[dict]) -> str:
+    """Plain-text summary fallback (kept for backward compat)."""
+    structured = generate_structured_summary(name, prescriptions)
+    return structured.get("clinical_notes", "")
 
 
 _STUB_EXTRACTION = {
@@ -121,4 +160,16 @@ _STUB_EXTRACTION = {
         {"name": "Amoxicillin", "dose": "500mg", "frequency": "1-0-1",
          "duration": "5 days", "instructions": "after food"}
     ],
+}
+
+_STUB_STRUCTURED = {
+    "clinical_notes": "[stub] Patient is on Amoxicillin 500mg (1-0-1 × 5 days) prescribed 2026-06-15 by Dr. Mehta at City Clinic for a likely bacterial infection.",
+    "current_medicines": [
+        {"name": "Amoxicillin", "dose": "500mg", "frequency": "1-0-1",
+         "last_prescribed": "2026-06-15", "status": "ongoing"}
+    ],
+    "conditions": [],
+    "allergies": [],
+    "last_consultation": "2026-06-15",
+    "trend": "insufficient_data",
 }

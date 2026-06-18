@@ -7,7 +7,7 @@ distinguished by `role`.
 """
 from datetime import datetime, date, timezone
 
-from sqlalchemy import String, Integer, Float, Date, DateTime, ForeignKey, Text
+from sqlalchemy import String, Integer, Float, Date, DateTime, ForeignKey, Text, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -68,3 +68,38 @@ class Medicine(Base):
     instructions: Mapped[str | None] = mapped_column(Text)
 
     prescription: Mapped["Prescription"] = relationship(back_populates="medicines")
+
+
+class AccessLog(Base):
+    """Audit trail — every doctor lookup of a patient is recorded."""
+    __tablename__ = "access_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    accessed_by_phone: Mapped[str] = mapped_column(String(20), index=True, nullable=False)
+    accessed_by_name: Mapped[str] = mapped_column(String(120), nullable=False)
+    patient_phone: Mapped[str] = mapped_column(String(20), ForeignKey("users.phone"), index=True, nullable=False)
+    action: Mapped[str] = mapped_column(String(50), nullable=False)  # "view_log" | "view_summary"
+    accessed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+
+class DoctorNote(Base):
+    """Private notes a doctor adds after consulting a patient."""
+    __tablename__ = "doctor_notes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    doctor_phone: Mapped[str] = mapped_column(String(20), ForeignKey("users.phone"), index=True, nullable=False)
+    patient_phone: Mapped[str] = mapped_column(String(20), ForeignKey("users.phone"), index=True, nullable=False)
+    note: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+
+class UserSettings(Base):
+    """Per-user preferences: language, notification prefs, doctor profile."""
+    __tablename__ = "user_settings"
+
+    phone: Mapped[str] = mapped_column(String(20), ForeignKey("users.phone"), primary_key=True)
+    language: Mapped[str] = mapped_column(String(5), nullable=False, default="en")
+    notifications_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    reminder_time: Mapped[str] = mapped_column(String(5), nullable=False, default="08:00")
+    hospital_name: Mapped[str | None] = mapped_column(String(160))
+    specialization: Mapped[str | None] = mapped_column(String(100))

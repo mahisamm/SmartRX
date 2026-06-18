@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from ..auth import hash_password, verify_password, make_token
 from ..database import get_db
-from ..models import User
+from ..models import User, UserSettings
 from ..schemas import RegisterIn, LoginIn, AuthOut, UserOut
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -21,7 +21,17 @@ def register(body: RegisterIn, db: Session = Depends(get_db)):
         password_hash=hash_password(body.password),
     )
     db.add(user)
+    db.flush()
+
+    # Auto-create settings row; seed doctor profile fields if provided
+    user_settings = UserSettings(
+        phone=body.phone,
+        hospital_name=body.hospital_name if body.role == "doctor" else None,
+        specialization=body.specialization if body.role == "doctor" else None,
+    )
+    db.add(user_settings)
     db.commit()
+
     return AuthOut(
         token=make_token(user.phone, user.role),
         user=UserOut(phone=user.phone, name=user.name, role=user.role),

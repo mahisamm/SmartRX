@@ -2,16 +2,15 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, setSession, getUser } from "../api.js";
 
-const EMPTY = { phone: "", password: "", name: "", role: "patient" };
+const EMPTY = { phone: "", password: "", name: "", role: "patient", hospital_name: "", specialization: "" };
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState("login"); // "login" | "register"
+  const [mode, setMode] = useState("login");
   const [form, setForm] = useState(EMPTY);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  // Already signed in? Skip the form.
   useEffect(() => {
     const existing = getUser();
     if (existing) {
@@ -35,6 +34,8 @@ export default function LoginPage() {
               password: form.password,
               name: form.name,
               role: form.role,
+              hospital_name: form.role === "doctor" && form.hospital_name ? form.hospital_name : undefined,
+              specialization: form.role === "doctor" && form.specialization ? form.specialization : undefined,
             })
           : await api.login(form.phone, form.password);
       setSession(res.token, res.user);
@@ -52,22 +53,10 @@ export default function LoginPage() {
       <p className="muted">Prescription tracking, made simple.</p>
 
       <div className="tabs">
-        <button
-          className={mode === "login" ? "tab active" : "tab"}
-          onClick={() => {
-            setMode("login");
-            setError("");
-          }}
-        >
+        <button className={mode === "login" ? "tab active" : "tab"} onClick={() => { setMode("login"); setError(""); }}>
           Log in
         </button>
-        <button
-          className={mode === "register" ? "tab active" : "tab"}
-          onClick={() => {
-            setMode("register");
-            setError("");
-          }}
-        >
+        <button className={mode === "register" ? "tab active" : "tab"} onClick={() => { setMode("register"); setError(""); }}>
           Register
         </button>
       </div>
@@ -75,24 +64,13 @@ export default function LoginPage() {
       <form onSubmit={submit} className="form">
         <label>
           Phone
-          <input
-            type="tel"
-            value={form.phone}
-            onChange={(e) => update("phone", e.target.value)}
-            required
-            autoComplete="username"
-          />
+          <input type="tel" value={form.phone} onChange={(e) => update("phone", e.target.value)} required autoComplete="username" />
         </label>
 
         {mode === "register" && (
           <label>
             Name
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => update("name", e.target.value)}
-              required
-            />
+            <input type="text" value={form.name} onChange={(e) => update("name", e.target.value)} required />
           </label>
         )}
 
@@ -115,6 +93,29 @@ export default function LoginPage() {
               <option value="doctor">Doctor</option>
             </select>
           </label>
+        )}
+
+        {mode === "register" && form.role === "doctor" && (
+          <>
+            <label>
+              Hospital / Clinic Name
+              <input
+                type="text"
+                value={form.hospital_name}
+                onChange={(e) => update("hospital_name", e.target.value)}
+                placeholder="e.g. City Medical Centre"
+              />
+            </label>
+            <label>
+              Specialization
+              <input
+                type="text"
+                value={form.specialization}
+                onChange={(e) => update("specialization", e.target.value)}
+                placeholder="e.g. General Medicine"
+              />
+            </label>
+          </>
         )}
 
         {error && <p className="error">{error}</p>}

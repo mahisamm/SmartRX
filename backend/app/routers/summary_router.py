@@ -1,22 +1,57 @@
-"""Doctor endpoint: AI-generated patient summary."""
+"""Doctor endpoint: structured AI-generated patient summary with drug interaction detection."""
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from pydantic import ValidationError
 
 from ..auth import require_role
 from ..database import get_db
-from ..models import User
-from ..schemas import SummaryOut
-from ..gemini_client import generate_summary
+from ..models import User, AccessLog
+from ..schemas import (
+    SummaryOut, StructuredSummary, StructuredMed, StructuredCondition,
+)
+from ..gemini_client import generate_structured_summary
 
 router = APIRouter(tags=["summary"])
+
+
+def _parse_structured(raw: dict) -> StructuredSummary:
+    """Convert raw Gemini dict to StructuredSummary, normalising field shapes."""
+    meds = []
+    for m in raw.get("current_medicines") or []:
+        if isinstance(m, dict):
+            meds.append(StructuredMed(
+                name=m.get("name", ""),
+                dose=m.get("dose"),
+                frequency=m.get("frequency"),
+                last_prescribed=m.get("last_prescribed"),
+                status=m.get("status", "unknown"),
+            ))
+
+    conditions = []
+    for c in raw.get("conditions") or []:
+        if isinstance(c, dict):
+            conditions.append(StructuredCondition(
+                name=c.get("name", ""),
+                onset=c.get("onset"),
+                status=c.get("status", "unknown"),
+            ))
+
+    return StructuredSummary(
+        clinical_notes=raw.get("clinical_notes") or "",
+        current_medicines=meds,
+        conditions=conditions,
+        allergies=raw.get("allergies") or [],
+        last_consultation=raw.get("last_consultation"),
+        trend=raw.get("trend") or "insufficient_data",
+    )
 
 
 @router.get("/summary/{phone}", response_model=SummaryOut)
 def patient_summary(
     phone: str,
-    _doctor: User = Depends(require_role("doctor")),
+    doctor: User = Depends(require_role("doctor")),
     db: Session = Depends(get_db),
 ):
     patient = db.get(User, phone)
@@ -38,16 +73,33 @@ def patient_summary(
     ]
     med_count = sum(len(p["medicines"]) for p in prescriptions)
 
-    # Zero medicines: skip the Gemini call entirely (eng review perf finding).
-    if med_count == 0:
-        return SummaryOut(phone=patient.phone, name=patient.name, summary="",
-                          medicine_count=0, generated_at=None)
+    # Audit log
+    db.add(AccessLog(
+        accessed_by_phone=doctor.phone,
+        accessed_by_name=doctor.name,
+        patient_phone=phone,
+        action="view_summary",
+    ))
+    db.commit()
 
-    summary = generate_summary(patient.name, prescriptions)
+    if med_count == 0:
+        return SummaryOut(
+            phone=patient.phone, name=patient.name, summary="",
+            structured=StructuredSummary(clinical_notes=""),
+            medicine_count=0, generated_at=None,
+        )
+
+    raw = generate_structured_summary(patient.name, prescriptions)
+    try:
+        structured = _parse_structured(raw)
+    except (ValidationError, Exception):
+        structured = StructuredSummary(clinical_notes=str(raw))
+
     return SummaryOut(
         phone=patient.phone,
         name=patient.name,
-        summary=summary,
+        summary=structured.clinical_notes,
+        structured=structured,
         medicine_count=med_count,
         generated_at=datetime.now(timezone.utc),
     )

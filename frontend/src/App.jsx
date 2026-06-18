@@ -4,7 +4,6 @@ import LoginPage from "./pages/LoginPage.jsx";
 import PatientPage from "./pages/PatientPage.jsx";
 import DoctorPage from "./pages/DoctorPage.jsx";
 
-// Route guard: redirect to login if no session, or if role mismatches.
 function Protected({ role, children }) {
   const user = getUser();
   if (!user) return <Navigate to="/" replace />;
@@ -22,15 +21,10 @@ function Header() {
         smartRX
       </Link>
       <div className="topbar-right">
-        <span className="who">
-          {user.name} · {user.role}
-        </span>
+        <span className="who">{user.name} · {user.role}</span>
         <button
           className="link-btn"
-          onClick={() => {
-            clearSession();
-            navigate("/");
-          }}
+          onClick={() => { clearSession(); navigate("/"); }}
         >
           Log out
         </button>
@@ -43,28 +37,26 @@ export default function App() {
   return (
     <div className="app">
       <Header />
-      <main className="content">
-        <Routes>
-          <Route path="/" element={<LoginPage />} />
-          <Route
-            path="/patient"
-            element={
-              <Protected role="patient">
-                <PatientPage />
-              </Protected>
-            }
-          />
-          <Route
-            path="/doctor"
-            element={
-              <Protected role="doctor">
-                <DoctorPage />
-              </Protected>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
+      <Routes>
+        <Route path="/" element={<LoginPage />} />
+        <Route
+          path="/patient"
+          element={
+            <Protected role="patient">
+              <PatientPage />
+            </Protected>
+          }
+        />
+        <Route
+          path="/doctor"
+          element={
+            <Protected role="doctor">
+              <DoctorPage />
+            </Protected>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </div>
   );
 }
