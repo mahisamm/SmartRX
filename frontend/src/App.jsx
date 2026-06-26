@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
 import { getUser, clearSession } from "./api.js";
 import LoginPage from "./pages/LoginPage.jsx";
+import AboutPage from "./pages/AboutPage.jsx";
 import PatientPage from "./pages/PatientPage.jsx";
 import DoctorPage from "./pages/DoctorPage.jsx";
 
@@ -39,6 +40,7 @@ export default function App() {
       <Header />
       <Routes>
         <Route path="/" element={<LoginPage />} />
+        <Route path="/about" element={<AboutPage />} />
         <Route
           path="/patient"
           element={

@@ -7,7 +7,7 @@ const ThreeBackground = lazy(() => import("../components/ThreeBackground.jsx"));
 
 const EMPTY = { phone: "", password: "", name: "", role: "patient", hospital_name: "", specialization: "" };
 
-/* ---- inline icons (stroke = currentColor) ---- */
+/* ---- inline line icons (stroke = currentColor) ---- */
 const Icon = {
   phone: (
     <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z" />
@@ -37,15 +37,47 @@ const Icon = {
       <path d="M12 11v4M10 13h4" />
     </>
   ),
+  pill: (
+    <>
+      <path d="M10.6 20.4 3.6 13.4a4.95 4.95 0 0 1 7-7l7 7a4.95 4.95 0 0 1-7 7z" />
+      <path d="M7 10 14 17" />
+    </>
+  ),
+  camera: (
+    <>
+      <path d="M3 7h3l1.5-2h9L18 7h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z" />
+      <circle cx="12" cy="13" r="3.5" />
+    </>
+  ),
+  pulse: <path d="M2 12h3.5l2.5 7 4-15 2.5 8H20" />,
+  shield: (
+    <>
+      <path d="M12 3l7 3v5c0 4.5-3 7.3-7 9-4-1.7-7-4.5-7-9V6l7-3z" />
+      <path d="M9.2 11.8 11 13.6 14.8 9.8" />
+    </>
+  ),
+  stethoscope: (
+    <>
+      <path d="M6 3H5a1 1 0 0 0-1 1v5a5 5 0 0 0 10 0V4a1 1 0 0 0-1-1h-1" />
+      <path d="M9 14v1a6 6 0 0 0 6 6 4 4 0 0 0 4-4v-2" />
+      <circle cx="19" cy="11" r="2" />
+    </>
+  ),
 };
+
+function Glyph({ name }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {Icon[name]}
+    </svg>
+  );
+}
 
 function Field({ icon, label, ...props }) {
   return (
     <label className="auth-field">
       <span className="auth-field-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          {Icon[icon]}
-        </svg>
+        <Glyph name={icon} />
       </span>
       <input placeholder=" " {...props} />
       <span className="auth-field-label">{label}</span>
@@ -110,11 +142,17 @@ export default function LoginPage() {
       </Suspense>
       <div className="auth-grain" aria-hidden="true" />
 
+      <nav className="auth-topnav">
+        <button type="button" className="auth-topnav-link" onClick={() => navigate("/about")}>
+          About us
+        </button>
+      </nav>
+
       <div className="auth-shell">
         {/* ── hero / brand panel ── */}
         <aside className="auth-hero">
           <div className="auth-brand">
-            <span className="auth-brand-mark">💊</span>
+            <span className="auth-brand-mark"><Glyph name="pill" /></span>
             <span className="auth-brand-name">smartRX</span>
           </div>
 
@@ -129,21 +167,21 @@ export default function LoginPage() {
 
           <ul className="auth-features">
             <li>
-              <span className="auth-feat-ico">📷</span>
+              <span className="auth-feat-ico"><Glyph name="camera" /></span>
               <div>
                 <strong>Scan &amp; extract</strong>
                 <span>AI vision reads any prescription photo.</span>
               </div>
             </li>
             <li>
-              <span className="auth-feat-ico">🩺</span>
+              <span className="auth-feat-ico"><Glyph name="pulse" /></span>
               <div>
                 <strong>Doctor-ready summary</strong>
                 <span>Conditions, medicines &amp; trends at a glance.</span>
               </div>
             </li>
             <li>
-              <span className="auth-feat-ico">🔒</span>
+              <span className="auth-feat-ico"><Glyph name="shield" /></span>
               <div>
                 <strong>Private &amp; audited</strong>
                 <span>You see every access to your records.</span>
@@ -226,7 +264,7 @@ export default function LoginPage() {
                       className={form.role === "patient" ? "auth-role-opt active" : "auth-role-opt"}
                       onClick={() => update("role", "patient")}
                     >
-                      <span className="auth-role-ico">🧑</span>
+                      <span className="auth-role-ico"><Glyph name="user" /></span>
                       Patient
                     </button>
                     <button
@@ -234,7 +272,7 @@ export default function LoginPage() {
                       className={form.role === "doctor" ? "auth-role-opt active" : "auth-role-opt"}
                       onClick={() => update("role", "doctor")}
                     >
-                      <span className="auth-role-ico">👨‍⚕️</span>
+                      <span className="auth-role-ico"><Glyph name="stethoscope" /></span>
                       Doctor
                     </button>
                   </div>
